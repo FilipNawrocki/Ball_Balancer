@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-
+#include <math.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,13 +61,13 @@ int Servo_value;
 
 //PID
 #define PID_KP  2.0f
-#define PID_KI  1.0f
-#define PID_KD  0.30f
+#define PID_KI  1.6f
+#define PID_KD  0.49f
 #define PID_TAU 0.02f
 #define PID_LIM_MIN -100.0f
 #define PID_LIM_MAX  100.0f
-#define PID_LIM_MIN_INT -10.0f
-#define PID_LIM_MAX_INT  10.0f
+#define PID_LIM_MIN_INT -70.0f
+#define PID_LIM_MAX_INT  70.0f
 #define SAMPLE_TIME_S 0.01f
 
 PIDController pid = { PID_KP, PID_KI, PID_KD, PID_TAU, PID_LIM_MIN,
@@ -112,14 +112,16 @@ int Distance_Count(){
 
  /*
  Serwo
- 250-minimalna wartość
- 750-połowa
- 1250-maxwartość
+
  */
-int Servo_value;
+int x, x1;
 int map(int value){
-	return Servo_value = (value-pid.limMin)*(1250-250)/(pid.limMax-pid.limMin)+250;
+	 x = (value-pid.limMin)*(1050-450)/(pid.limMax-pid.limMin)+450;
+	x1 = (0.0000222222*(int)pow(x, 2)-0.0066666667*x-7.5000000000);
+	return x = (x1+6)*(900-450)/(10+6)+450;
+
 }
+
 static uint32_t start_time;
 float elapsed_time(){
 	uint32_t end_time = HAL_GetTick();
