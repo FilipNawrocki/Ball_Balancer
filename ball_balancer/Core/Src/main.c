@@ -49,8 +49,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-#define TRIG_PIN GPIO_PIN_10
-#define TRIG_PORT GPIOB
+#define TRIG_PIN GPIO_PIN_15
+#define TRIG_PORT GPIOA
 #define ECHO_PIN GPIO_PIN_0
 #define ECHO_PORT GPIOA
 uint32_t pMillis;
@@ -175,7 +175,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  float setpoint = 14.0f;
+  float setpoint = 30.0f;
   while (1)
   {
 	  Distance = Distance_Count();
