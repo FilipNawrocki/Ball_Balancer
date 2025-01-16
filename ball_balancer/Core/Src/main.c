@@ -61,7 +61,7 @@ int Servo_value;
 
 //PID
 #define PID_KP  2.0f
-#define PID_KI  1.6f
+#define PID_KI  1.5f
 #define PID_KD  0.49f
 #define PID_TAU 0.02f
 #define PID_LIM_MIN -100.0f
@@ -110,19 +110,14 @@ int Distance_Count(){
 
 }
 
- /*
- Serwo
-
- */
 int x, x1;
 int map(int value){
 	 x = (value-pid.limMin)*(1050-450)/(pid.limMax-pid.limMin)+450;
 	x1 = (0.0000222222*(int)pow(x, 2)-0.0066666667*x-7.5000000000);
-	return x = (x1+6)*(900-450)/(10+6)+450;
-
+	return x = (x1+6)*(1000-500)/(10+6)+500;
 }
 
-static uint32_t start_time;
+static uint32_t start_time = 0;
 float elapsed_time(){
 	uint32_t end_time = HAL_GetTick();
 	uint32_t elapsed_time = end_time - start_time;
@@ -180,7 +175,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  float setpoint = 30.0f;
+  float setpoint = 14.0f;
   while (1)
   {
 	  Distance = Distance_Count();
