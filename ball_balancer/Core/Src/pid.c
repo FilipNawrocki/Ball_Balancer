@@ -7,6 +7,7 @@
 
 #include "PID.h"
 
+
 void PIDController_Init(PIDController *pid) {
 
 	/* Clear controller variables */
@@ -27,6 +28,10 @@ float PIDController_Update(PIDController *pid, float setpoint, float measurement
 	*/
     float error = setpoint - measurement;
 
+    if (fabs(error)<2){
+
+    	error=0;
+    }
 	/*
 	* Proportional
 	*/

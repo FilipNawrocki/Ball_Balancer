@@ -29,7 +29,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include <math.h>
+#include "st7735.h"
+#include "fonts.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,6 +52,9 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+float setpoint = 25.0f;
+int Servo_value;
+
 #define TRIG_PIN GPIO_PIN_15
 #define TRIG_PORT GPIOA
 #define ECHO_PIN GPIO_PIN_0
@@ -58,11 +63,10 @@ uint32_t pMillis;
 uint32_t Value1 = 0;
 uint32_t Value2 = 0;
 uint16_t Distance  = 0;  // cm
-int Servo_value;
 
 //PID
 #define PID_KP  2.0f
-#define PID_KI  1.5f
+#define PID_KI  1.45f
 #define PID_KD  0.49f
 #define PID_TAU 0.02f
 #define PID_LIM_MIN -100.0f
@@ -111,7 +115,8 @@ int Distance_Count(){
 
 }
 
-int x, x1;
+int x;
+float x1;
 int map(int value){
 	 x = (value-pid.limMin)*(1050-450)/(pid.limMax-pid.limMin)+450;
 	x1 = (0.0000222222*(int)pow(x, 2)-0.0066666667*x-7.5000000000);
@@ -126,6 +131,8 @@ float elapsed_time(){
 	start_time = HAL_GetTick();
 	return elapsed_time_s;
 }
+
+
 
 /* USER CODE END 0 */
 
@@ -177,17 +184,33 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  float setpoint = 30.0f;
+  lcd_init();
+  for (int y = 0; y < LCD_HEIGHT; y++) {
+    for (int x = 0; x < LCD_WIDTH; x++) {
+      lcd_put_pixel(x, y, __REV16(x / 10 + y * 16));
+    }
+  }
+  lcd_copy();
+
+  ST7735_WriteString(35, 10, "Dystans:" , Font_11x18, ST7735_WHITE, ST7735_BLUE);
+  ST7735_WriteString(20, 62, "Wartosc zadana:" , Font_7x10, ST7735_WHITE, ST7735_BLUE);
+  char str[2];
+
   while (1)
   {
 	  Distance = Distance_Count();
+	  sprintf(str, "%d", Distance);
+	  ST7735_WriteString(50, 30, str , Font_16x26, ST7735_WHITE, ST7735_BLUE);
+	  sprintf(str, "%d", (int)setpoint);
+	  ST7735_WriteString(50, 80, str , Font_16x26, ST7735_WHITE, ST7735_BLUE);
 	  HAL_Delay(50);
+
 	  pid.T = elapsed_time();
 	  PIDController_Update(&pid, setpoint, Distance);
       Servo_value = map(pid.out);
 
       __HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2, Servo_value);
-      HAL_Delay(200);
+      HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

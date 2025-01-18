@@ -4,9 +4,11 @@
  *  Created on: Jan 14, 2025
  *      Author: 48791
  */
-
+#include <math.h>
 #ifndef PID_CONTROLLER_H
 #define PID_CONTROLLER_H
+
+
 
 typedef struct {
 
