@@ -52,7 +52,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-float setpoint = 15.0f;
+float setpoint = 30.0f;
 int Servo_value;
 
 #define TRIG_PIN GPIO_PIN_15
@@ -66,8 +66,8 @@ uint16_t Distance  = 0;  // cm
 
 //PID
 #define PID_KP  2.0f
-#define PID_KI  1.5f
-#define PID_KD  0.5f
+#define PID_KI  1.51f
+#define PID_KD  0.51f
 #define PID_TAU 0.02f
 #define PID_LIM_MIN -100.0f
 #define PID_LIM_MAX  100.0f
@@ -112,7 +112,7 @@ int Distance_Count(){
 
     Distance = (Value2-Value1)* 0.034/2;
 
-    if (Distance>60 || Distance<0){
+    if (Distance>60){
     	Distance= prevDistance;
     	}
 
@@ -126,7 +126,7 @@ float x1;
 int map(int value){
 	 x = (value-pid.limMin)*(1050-450)/(pid.limMax-pid.limMin)+450;
 	x1 = (0.0000222222*(int)pow(x, 2)-0.0066666667*x-7.5000000000);
-	return x = (x1+6)*(1000-500)/(10+6)+500;
+	return x = (x1+6)*(900-450)/(10+6)+450;
 }
 
 static uint32_t start_time = 0;
@@ -138,19 +138,50 @@ float elapsed_time(){
 	return elapsed_time_s;
 }
 
+#define LINE_MAX_LENGTH 10
+static char line_buffer[LINE_MAX_LENGTH + 1];
+static uint32_t line_length;
+static int first_number;
+static int second_number;
+int i=0;
+void line_append(uint8_t value) {
+  if (value == '\r' || value == '\n') {
+    if (line_length > 0) {
+      line_buffer[line_length] = '\0'; // Dodanie końca ciągu
 
+      if (i == 0) {
+        first_number = line_buffer[0] - '0'; // Konwersja pierwszego znaku na liczbę
+        i++;
+      } else if (i == 1) {
+        second_number = line_buffer[0] - '0'; // Konwersja drugiego znaku na liczbę
+        i++;
+      }
 
+      if (i == 2) {
+        setpoint = first_number * 10 + second_number;
+        i = 0;
+      }
 
-
-  void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-  {
-    if (huart == &huart2) {
-
-      HAL_UART_Receive_IT(&huart2, &uart_rx_buffer, 3);
-
+      line_length = 0;
     }
+  } else {
+    if (line_length >= LINE_MAX_LENGTH) {
+      line_length = 0; // Reset w przypadku przepełnienia
+      return;
+    }
+    line_buffer[line_length++] = value;
   }
+}
 
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if (huart == &huart2) {
+	line_append(uart_rx_buffer);
+    HAL_UART_Receive_IT(&huart2, &uart_rx_buffer, 1);
+
+  }
+}
 
 
 /* USER CODE END 0 */
@@ -214,7 +245,7 @@ int main(void)
   ST7735_WriteString(35, 10, "Dystans:" , Font_11x18, ST7735_WHITE, ST7735_BLUE);
   ST7735_WriteString(20, 62, "Wartosc zadana:" , Font_7x10, ST7735_WHITE, ST7735_BLUE);
   char str[2];
-  HAL_UART_Receive_IT(&huart2, &uart_rx_buffer, 3);
+  HAL_UART_Receive_IT(&huart2, &uart_rx_buffer, 1);
   while (1)
   {
 
@@ -233,7 +264,7 @@ int main(void)
       Servo_value = map(pid.out);
 
       __HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2, Servo_value);
-      HAL_Delay(50);
+      HAL_Delay(150);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
