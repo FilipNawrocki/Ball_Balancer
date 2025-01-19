@@ -52,7 +52,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-float setpoint = 25.0f;
+float setpoint = 15.0f;
 int Servo_value;
 
 #define TRIG_PIN GPIO_PIN_15
@@ -66,8 +66,8 @@ uint16_t Distance  = 0;  // cm
 
 //PID
 #define PID_KP  2.0f
-#define PID_KI  1.45f
-#define PID_KD  0.49f
+#define PID_KI  1.5f
+#define PID_KD  0.5f
 #define PID_TAU 0.02f
 #define PID_LIM_MIN -100.0f
 #define PID_LIM_MAX  100.0f
@@ -77,6 +77,11 @@ uint16_t Distance  = 0;  // cm
 
 PIDController pid = { PID_KP, PID_KI, PID_KD, PID_TAU, PID_LIM_MIN,
 		             PID_LIM_MAX,PID_LIM_MIN_INT, PID_LIM_MAX_INT, SAMPLE_TIME_S };
+float sim_time;
+uint8_t tx_buffer[32];
+uint8_t uart_rx_buffer = 0;
+uint8_t uart_rx_buffer_test = 0;
+
 
 /* USER CODE END PV */
 
@@ -107,9 +112,10 @@ int Distance_Count(){
 
     Distance = (Value2-Value1)* 0.034/2;
 
-    if (Distance>62|| Distance<0){
+    if (Distance>60 || Distance<0){
     	Distance= prevDistance;
-    }
+    	}
+
     prevDistance=Distance;
     return Distance;
 
@@ -131,6 +137,19 @@ float elapsed_time(){
 	start_time = HAL_GetTick();
 	return elapsed_time_s;
 }
+
+
+
+
+
+  void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+  {
+    if (huart == &huart2) {
+
+      HAL_UART_Receive_IT(&huart2, &uart_rx_buffer, 3);
+
+    }
+  }
 
 
 
@@ -173,7 +192,7 @@ int main(void)
 
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
   __HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2, 750);
-  HAL_Delay(500);
+  HAL_Delay(100);
 
   HAL_TIM_Base_Start(&htim1);
   HAL_GPIO_WritePin(TRIG_PORT, TRIG_PIN, GPIO_PIN_RESET);  // pull the TRIG pin low
@@ -195,9 +214,11 @@ int main(void)
   ST7735_WriteString(35, 10, "Dystans:" , Font_11x18, ST7735_WHITE, ST7735_BLUE);
   ST7735_WriteString(20, 62, "Wartosc zadana:" , Font_7x10, ST7735_WHITE, ST7735_BLUE);
   char str[2];
-
+  HAL_UART_Receive_IT(&huart2, &uart_rx_buffer, 3);
   while (1)
   {
+
+
 	  Distance = Distance_Count();
 	  sprintf(str, "%d", Distance);
 	  ST7735_WriteString(50, 30, str , Font_16x26, ST7735_WHITE, ST7735_BLUE);
@@ -205,12 +226,14 @@ int main(void)
 	  ST7735_WriteString(50, 80, str , Font_16x26, ST7735_WHITE, ST7735_BLUE);
 	  HAL_Delay(50);
 
-	  pid.T = elapsed_time();
+	  sim_time= elapsed_time();
+	  pid.T = sim_time;
+
 	  PIDController_Update(&pid, setpoint, Distance);
       Servo_value = map(pid.out);
 
       __HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2, Servo_value);
-      HAL_Delay(100);
+      HAL_Delay(50);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

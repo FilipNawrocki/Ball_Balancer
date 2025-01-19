@@ -28,7 +28,7 @@ float PIDController_Update(PIDController *pid, float setpoint, float measurement
 	*/
     float error = setpoint - measurement;
 
-    if (fabs(error)<2){
+    if (fabs(error)<1){
 
     	error=0;
     }
