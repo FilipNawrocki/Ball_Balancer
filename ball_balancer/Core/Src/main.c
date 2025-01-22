@@ -73,7 +73,7 @@ uint16_t Distance  = 0;  // cm
 #define PID_LIM_MAX  100.0f
 #define PID_LIM_MIN_INT -70.0f
 #define PID_LIM_MAX_INT  70.0f
-#define SAMPLE_TIME_S 0.01f
+#define SAMPLE_TIME_S 0.1f
 
 PIDController pid = { PID_KP, PID_KI, PID_KD, PID_TAU, PID_LIM_MIN,
 		             PID_LIM_MAX,PID_LIM_MIN_INT, PID_LIM_MAX_INT, SAMPLE_TIME_S };
