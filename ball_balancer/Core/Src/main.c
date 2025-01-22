@@ -52,7 +52,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-float setpoint = 30.0f;
+float setpoint = 25.0f;
 int Servo_value;
 
 #define TRIG_PIN GPIO_PIN_15
@@ -77,10 +77,7 @@ uint16_t Distance  = 0;  // cm
 
 PIDController pid = { PID_KP, PID_KI, PID_KD, PID_TAU, PID_LIM_MIN,
 		             PID_LIM_MAX,PID_LIM_MIN_INT, PID_LIM_MAX_INT, SAMPLE_TIME_S };
-float sim_time;
-uint8_t tx_buffer[32];
-uint8_t uart_rx_buffer = 0;
-uint8_t uart_rx_buffer_test = 0;
+
 
 
 /* USER CODE END PV */
@@ -129,15 +126,6 @@ int map(int value){
 	return x = (x1+6)*(900-450)/(10+6)+450;
 }
 
-static uint32_t start_time = 0;
-float elapsed_time(){
-	uint32_t end_time = HAL_GetTick();
-	uint32_t elapsed_time = end_time - start_time;
-	float elapsed_time_s = elapsed_time / 1000.0f;
-	start_time = HAL_GetTick();
-	return elapsed_time_s;
-}
-
 #define LINE_MAX_LENGTH 10
 static char line_buffer[LINE_MAX_LENGTH + 1];
 static uint32_t line_length;
@@ -166,20 +154,10 @@ void line_append(uint8_t value) {
     }
   } else {
     if (line_length >= LINE_MAX_LENGTH) {
-      line_length = 0; // Reset w przypadku przepełnienia
+      line_length = 0;
       return;
     }
     line_buffer[line_length++] = value;
-  }
-}
-
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-  if (huart == &huart2) {
-	line_append(uart_rx_buffer);
-    HAL_UART_Receive_IT(&huart2, &uart_rx_buffer, 1);
-
   }
 }
 
@@ -219,6 +197,8 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM1_Init();
   MX_SPI2_Init();
+  MX_TIM3_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
@@ -226,6 +206,7 @@ int main(void)
   HAL_Delay(100);
 
   HAL_TIM_Base_Start(&htim1);
+  HAL_TIM_Base_Start_IT(&htim4);
   HAL_GPIO_WritePin(TRIG_PORT, TRIG_PIN, GPIO_PIN_RESET);  // pull the TRIG pin low
 
   PIDController_Init(&pid);
@@ -245,7 +226,7 @@ int main(void)
   ST7735_WriteString(35, 10, "Dystans:" , Font_11x18, ST7735_WHITE, ST7735_BLUE);
   ST7735_WriteString(20, 62, "Wartosc zadana:" , Font_7x10, ST7735_WHITE, ST7735_BLUE);
   char str[2];
-  HAL_UART_Receive_IT(&huart2, &uart_rx_buffer, 1);
+
   while (1)
   {
 
@@ -257,13 +238,8 @@ int main(void)
 	  ST7735_WriteString(50, 80, str , Font_16x26, ST7735_WHITE, ST7735_BLUE);
 	  HAL_Delay(50);
 
-	  sim_time= elapsed_time();
-	  pid.T = sim_time;
 
-	  PIDController_Update(&pid, setpoint, Distance);
-      Servo_value = map(pid.out);
 
-      __HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2, Servo_value);
       HAL_Delay(150);
     /* USER CODE END WHILE */
 
@@ -324,6 +300,34 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM6 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+	if(htim->Instance == TIM4)
+	  {
+		  PIDController_Update(&pid, setpoint, Distance);
+		  Servo_value = map(pid.out);
+		  __HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2, Servo_value);
+		  const char message[] = "Hello world!\r\n";
+		  HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), HAL_MAX_DELAY);
+	  }
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM6) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
